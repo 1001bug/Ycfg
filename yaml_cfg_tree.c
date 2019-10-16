@@ -16,21 +16,22 @@ void p(int v){
 }
 
 
-void seqencing(yaml_parser_t *parser, char *root_node, YML_NODE_s *RR){
-    
-    
-    YML_NODE_s *R=RR;
+int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot){
     yaml_event_t  event;
-    int seq_num=0;
-    int inseq_num=0;
-    char *new_node=root_node?strdup(root_node):NULL;
     int kvp=1;
-    int first=0;
-    //printf("***** ENTER MAPPING FUN *****\n");
+    
+    if(Proot==NULL)
+        return -1;
+    if(*Proot==NULL)
+        *Proot = calloc(1,sizeof(YML_NODE_s));
+    
+    YML_NODE_s *root = *Proot;
+    
     do {
     if (!yaml_parser_parse(parser, &event)) {
-       printf("Parser error %d\n", parser->error);
-       exit(EXIT_FAILURE);
+       fprintf(stderr,"Parser error (%d): %s\n", parser->error, parser->problem);
+       yaml_event_delete(&event);
+       return -1;
     }
 
     switch(event.type)
@@ -39,24 +40,23 @@ void seqencing(yaml_parser_t *parser, char *root_node, YML_NODE_s *RR){
     /* Stream start/end */
 
         case YAML_MAPPING_START_EVENT: {
-            p(tab++); 
             kvp=1; 
-            printf("Mapping inside seq => for [[ %s ]]  {%3i}\n",new_node==NULL?"ROOT":new_node,seq_num++);
-            R->type=YAML_MAPPING_NODE;
-            R->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
-            mapping(parser,new_node,(YML_NODE_s *)R->data); 
+            root->type=YAML_MAPPING_NODE;
+            //root->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
+            
+            int result = mapping(parser,(YML_NODE_s **)( &(root->data) )); 
+            if(result!=0)
+                return result;
             
             YML_NODE_s *tmp=calloc(1,sizeof(YML_NODE_s));
-            R->next=tmp;
-            R=tmp;
+            root->next=tmp;
+            root=tmp;
             
             break;
         }
         
         case YAML_SEQUENCE_END_EVENT: {
-            p(--tab);
-            printf("End Sequence. [[ %s ]] FINITA\n",root_node==NULL?"NULL":root_node); 
-            return;
+            return 0;
         }
 
     
@@ -66,125 +66,108 @@ void seqencing(yaml_parser_t *parser, char *root_node, YML_NODE_s *RR){
     { 
         //сиквенс - это список, там нет ключа и значения
         
-            p(tab);
-            printf("{%s} {%02i} [%s]\n",root_node==NULL?"ROOT":root_node,inseq_num++,  event.data.scalar.length==0?"NULL":(char*)event.data.scalar.value);
-            kvp=!kvp;
-            new_node=strdup((char*)event.data.scalar.value);
-            
-            R->tag=NULL;
-            R->type=YAML_SCALAR_NODE;
-            R->data=(yaml_val)strdup((char*)event.data.scalar.value);
-            
+            root->tag=NULL;
+            root->type=YAML_SCALAR_NODE;
+            root->data=(yaml_val)strdup((char*)event.data.scalar.value);
             
             YML_NODE_s *tmp=calloc(1,sizeof(YML_NODE_s));
-            R->next=tmp;
-            R=tmp;
-            
-            //R->next=calloc(1,sizeof(YML_NODE_s));
-            //R=R->next;
-                
-        
-        
+            root->next=tmp;
+            root=tmp;
          
             break;
         }
     }
+    
     if(event.type != YAML_STREAM_END_EVENT)
       yaml_event_delete(&event);
+    
   } while(event.type != YAML_STREAM_END_EVENT);
+  
   yaml_event_delete(&event);
   
-  
+  return 0;
   
 }
 
-void mapping(yaml_parser_t *parser, char *root_node, YML_NODE_s *RR){
+int mapping(yaml_parser_t *parser, YML_NODE_s **Proot){
     yaml_event_t  event;
-    YML_NODE_s *R;
-    R=RR;
-    map_level+=1;
-    char *new_node=root_node?strdup(root_node):NULL;
+
     int kvp=1;
-    int first=0;
-    //printf("***** ENTER MAPPING FUN *****\n");
+    
+    
+    if(Proot==NULL)
+        return -1;
+    if(*Proot==NULL)
+        *Proot = calloc(1,sizeof(YML_NODE_s));
+    
+    YML_NODE_s *root = *Proot;
+    
     do {
     if (!yaml_parser_parse(parser, &event)) {
-       printf("Parser error %d\n", parser->error);
-       exit(EXIT_FAILURE);
+       fprintf(stderr,"Parser error (%d): %s\n", parser->error, parser->problem);
+       yaml_event_delete(&event);
+       return -1;
     }
     
     switch(event.type)
     { 
         
-    case YAML_NO_EVENT: puts("No event!"); break;
-    /* Stream start/end */
-
         case YAML_MAPPING_START_EVENT: {
-            p(tab++); 
+    
             kvp=1; 
-            printf("Mapping => for [[ %s ]]\n",new_node==NULL?"ROOT":new_node); 
-            R->type=YAML_MAPPING_NODE;
-            R->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
-            mapping(parser,new_node,(YML_NODE_s *)R->data); 
+            root->type=YAML_MAPPING_NODE;
+            //root->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
+            int result=mapping(parser,(YML_NODE_s **)(&(root->data))); 
+            if(result!=0)
+                return result;
             
             YML_NODE_s *tmp=calloc(1,sizeof(YML_NODE_s));
-            R->next=tmp;
-            R=tmp;
+            root->next=tmp;
+            root=tmp;
             
             break;
         }
         case YAML_MAPPING_END_EVENT: {
-            p(--tab);
-            printf("End Mapping. [[ %s ]] FINITA\n",root_node==NULL?"NULL":root_node); 
-            map_level-=1;
-            return;
+            return 0;
         }
 
         
         case YAML_SEQUENCE_START_EVENT: {
-            p(tab++);
             kvp=1;
-            printf("Sequence => for [[ %s ]]\n",new_node==NULL?"ROOT":new_node); 
-            R->type=YAML_SEQUENCE_NODE;
-            R->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
-            seqencing(parser,new_node,(YML_NODE_s *)R->data);
+            root->type=YAML_SEQUENCE_NODE;
+            //root->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
+            int result=seqencing(parser,(YML_NODE_s **)(&(root->data)));
+            if(result!=0)
+                return result;
             
             YML_NODE_s *tmp=calloc(1,sizeof(YML_NODE_s));
-            R->next=tmp;
-            R=tmp;
+            root->next=tmp;
+            root=tmp;
             
             break;
         }
     
     
     case YAML_SCALAR_EVENT:  
-            
-            
     { 
         if(kvp){
-            p(tab);
-            printf("{%s} [%s] = ",root_node==NULL?"ROOT":root_node,event.data.scalar.length==0?"NULL":(char*)event.data.scalar.value);
-            kvp=!kvp;
-            new_node=strdup((char*)event.data.scalar.value);
-            
-            
-            
-            R->tag=strdup((char*)event.data.scalar.value);
-                
+            kvp=0;
+            root->tag=strdup((char*)event.data.scalar.value);
         }
         else{
-            printf("[%s]\n",event.data.scalar.length==0?"NULL":(char*)event.data.scalar.value);
-            kvp=!kvp;
+            kvp=1;
             
+            root->type=YAML_SCALAR_NODE;
             
-            R->type=YAML_SCALAR_NODE;
-            R->data=(yaml_val)strdup((char*)event.data.scalar.value);
+            char *val = (char*)event.data.scalar.value;
+            if(val != NULL && strlen(val)>0)
+                root->data=(yaml_val)strdup(val);
+            else
+                root->data = (yaml_val)NULL;
             
             YML_NODE_s *tmp=calloc(1,sizeof(YML_NODE_s));
-            R->next=tmp;
-            R=tmp;
-            
-            
+            root->next=tmp;
+            root=tmp;
             
         }
          
@@ -194,55 +177,53 @@ void mapping(yaml_parser_t *parser, char *root_node, YML_NODE_s *RR){
     if(event.type != YAML_STREAM_END_EVENT)
       yaml_event_delete(&event);
   } while(event.type != YAML_STREAM_END_EVENT);
+
   yaml_event_delete(&event);
   
-  
+return 0;  
   
 }
 
-void byevent(yaml_parser_t *parser, YML_NODE_s *RR){
+int byevent(yaml_parser_t *parser, YML_NODE_s **root){
     yaml_event_t  event;
-    YML_NODE_s *R=RR;
-    int M=0;
-    int S=0;
     
-    /* START new code */
+    
   do {
     if (!yaml_parser_parse(parser, &event)) {
-       printf("Parser error %d\n", parser->error);
-       exit(EXIT_FAILURE);
+       fprintf(stderr,"Parser error (%d): %s\n", parser->error, parser->problem);
+       yaml_event_delete(&event);
+       return -1;
     }
 
-    switch(event.type)
-    { 
-    case YAML_NO_EVENT: puts("No event!"); break;
-    /* Stream start/end */
-    case YAML_STREAM_START_EVENT:p(tab++); puts("STREAM START"); break;
-    case YAML_STREAM_END_EVENT: p(--tab);  puts("STREAM END");   break;
-    /* Block delimeters */
-    case YAML_DOCUMENT_START_EVENT: p(tab++);puts("Document =>");break;
-    case YAML_DOCUMENT_END_EVENT: p(--tab);   puts("End Document"); break;
-    case YAML_SEQUENCE_START_EVENT: p(tab++); puts("Sequence => FIRST");seqencing(parser,NULL,R); break;
+    switch(event.type) {
+            
+            case YAML_SEQUENCE_START_EVENT:
+            {
+                int result = seqencing(parser, root);
+                if(result!=0)
+                    return result;
+                break;
+            }
+
+            case YAML_MAPPING_START_EVENT:
+            {
+                int result = mapping(parser, root);
+                if(result!=0)
+                    return result;
+                break;
+            }
+
+            case YAML_NO_EVENT:
+            case YAML_ALIAS_EVENT:
+            case YAML_SCALAR_EVENT:
+            case YAML_STREAM_START_EVENT:
+            case YAML_STREAM_END_EVENT:
+            case YAML_DOCUMENT_START_EVENT:
+            case YAML_DOCUMENT_END_EVENT:
+                break;
+        }//switch
     
     
-    case YAML_MAPPING_START_EVENT: {
-        p(tab++);
-        puts("Mapping => FIRST");
-        mapping(parser,NULL,R); 
-        break;
-    }
-    //case YAML_MAPPING_END_EVENT: p(--tab);    puts("End Mapping"); break;
-    /* Data */
-    case YAML_ALIAS_EVENT:  p(tab); printf("Got alias (anchor %s)\n", event.data.alias.anchor); break;
-        case YAML_SCALAR_EVENT:  
-            
-            
-        {
-            p(tab);printf("!!! [%s]\n",event.data.scalar.length==0?"NULL":(char*)event.data.scalar.value);
-            //else if(A) {p(tab);printf("Got scalar [%s]=",event.data.scalar.value);} else printf("[%s]\n", event.data.scalar.value);A=!A; break;
-            break;
-        }
-    }
     if(event.type != YAML_STREAM_END_EVENT)
       yaml_event_delete(&event);
   } while(event.type != YAML_STREAM_END_EVENT);
@@ -251,13 +232,19 @@ void byevent(yaml_parser_t *parser, YML_NODE_s *RR){
 
   
   
-  return;
+  return 0;
 }
 
 
 
+void print_t(Yvoid_t *Tree){
+    
+    YML_NODE_s *R=(YML_NODE_s *)Tree;
+    print_y(R);
+}
 
 void print_y(YML_NODE_s *R){
+    
     
     
     for(YML_NODE_s * tmp=R;tmp;tmp=tmp->next){
@@ -273,7 +260,7 @@ void print_yy(YML_NODE_s *R){
     
     if(R->type==YAML_MAPPING_NODE){
         p(tab);
-        printf("MAT TAG %s\n",R->tag);
+        printf("MAT TAG [%s]\n",R->tag?R->tag:"[null]");
         tab++;
         print_y((YML_NODE_s *)R->data);
     }
@@ -285,8 +272,10 @@ void print_yy(YML_NODE_s *R){
     }
     if(R->type==YAML_SCALAR_NODE){
         p(tab);
-        if(R->tag)
-            printf("KVP: %s = %s\n",R->tag,(char*)R->data);
+        if(R->tag){
+            char *val=(char*)R->data;
+            printf("KVP: %s = %s\n",R->tag,val?val:"[null]");
+        }
         else
             printf("ITM: %s\n",(char*)R->data);
         
@@ -378,116 +367,51 @@ YML_NODE_s * yaml_get_node_by_name_and_type(YML_NODE_s * R, char *name, yaml_nod
 
 
 
-
-Yvoid_t YreadCfg(char* file)
+Yvoid_t YreadCfg(FILE *fh, char* file)
 {
-  static __thread char *p;
-  
-  YML_NODE_s ROOT, *R;
-  memset(&ROOT,0,sizeof(ROOT));
-  R=&ROOT;
-  
-  
-    
-    
 
+  yaml_parser_t parser;
+  
+  YML_NODE_s *R=NULL;
+  int shoud_closw_fd=0;  
+  if (fh == NULL) {
+        fh = fopen(file, "r");
+        if (fh == NULL) {
+            fprintf(stderr, "Failed to open file!\n");
+            return NULL;
+        }
+        shoud_closw_fd=1;
+    }
   
     
-  FILE *fh = fopen(file, "r");
-  yaml_parser_t parser;
-  yaml_token_t  token;   /* new variable */
+  
+  
+  
 
   /* Initialize parser */
-  if(!yaml_parser_initialize(&parser))
-    fprintf(stderr,"Failed to initialize parser!\n" );
-  if(fh == NULL)
-    fprintf(stderr,"Failed to open file!\n");
-
-  /* Set input file */
+  if(!yaml_parser_initialize(&parser)){
+    fprintf(stderr,"Failed to initialize yaml parser!\n" );
+    return NULL;
+  }
   yaml_parser_set_input_file(&parser, fh);
 
-  //bytoken(&parser);
-  byevent(&parser,R);
-  
+  //event base parsing
+  int r = byevent(&parser,&R);
 
-  /* Cleanup */
+  // Cleanup
   yaml_parser_delete(&parser);
-  fclose(fh);
   
-  tab=0;
-  printf("\n\n\n");
-  
-  print_y(R);
-  
-  printf("\n\n\n");
-  
-  
-  print_keys((YML_NODE_s *)R->data);
-  
+  //close only if opened by us
+  if(shoud_closw_fd)
+    fclose(fh);
 
-  printf("\n\nSearch for transmitter, then print reys\n");
-  YML_NODE_s * T = yaml_get_node_by_name(R,"transmitter");
-  if(T){
-      printf("All types\n");
-      print_keys(T);
-      printf("type SEQ only\n");
-      print_keys_type(T,YAML_SEQUENCE_NODE);
-      printf("type SCALAR only\n");
-      print_keys_type(T,YAML_SCALAR_NODE);
+  if(R==NULL || r < 0){
+    fprintf(stderr,"Failed to parse yaml!\n" );
+    //cleanup tree 'R'!!!!!
+    return NULL;
   }
-  
-   tab=0;
-  printf("\n\nprint transmitter tree\n");
-  if(T)
-    print_y(T);
-  
-  
-  
-  
-  printf("\n\nSearch for level_1_B after root, then print reys\n");
-  YML_NODE_s * M = yaml_get_node_by_name(T,"level_1_LISTMAP");
-  if(M){
-      print_keys(M);
-      print_keys_value(M);
-  }
-  
-  
-  
-  
-  printf("recivier YAML_MAPPING_NODE\n");
-  YML_NODE_s * F = yaml_get_node_by_name_and_type(R,"recivier",YAML_MAPPING_NODE);
-  if(F){
-      print_keys(F);
-      print_keys_value(F);
-  }
-  
-  
-  
-  
-  printf("Get tier_config node\n");
-  YML_NODE_s * Tier = yaml_get_node_by_name_and_type(R,"tier_config",YAML_MAPPING_NODE);
-  if(Tier){
-      
-      printf("Get OK, print seq 'test_seq22'\n");
-      print_seq_items(yaml_get_node_by_name_and_type(Tier,"test_seq22",YAML_SEQUENCE_NODE));
-      
-  }
-  
-  
-  
-  printf("\n\nFINITA FINITA\n\n");
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  return 0;
+
+  return (Yvoid_t *)R;
+
   
 }

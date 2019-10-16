@@ -42,11 +42,19 @@ extern "C" {
 
 
     
-    void seqencing(yaml_parser_t *parser, char *pr, YML_NODE_s *R);
-    void mapping(yaml_parser_t *parser, char *pr, YML_NODE_s *R);
-    void byevent(yaml_parser_t *parser, YML_NODE_s *RR);
-    void print_y(YML_NODE_s *R);
-    void print_yy(YML_NODE_s *R);
+    //int seqencing(yaml_parser_t *parser, YML_NODE_s *R);
+    //int mapping(yaml_parser_t *parser, YML_NODE_s *R);
+    static int mapping(yaml_parser_t *parser, YML_NODE_s **root);
+    static int seqencing(yaml_parser_t *parser, YML_NODE_s **root);
+    
+    //int byevent(yaml_parser_t *parser, YML_NODE_s *RR);
+    static int byevent(yaml_parser_t *parser, YML_NODE_s **root);
+    
+    static void print_y(YML_NODE_s *R);
+    static void print_yy(YML_NODE_s *R);
+    
+    static void destroy_y(YML_NODE_s *R);
+    static void destroy_yy(YML_NODE_s *R);
 
 #ifdef __cplusplus
 }

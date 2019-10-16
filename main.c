@@ -21,15 +21,79 @@ int main(int argc, char** argv)
   setvbuf(stdout, (char*)NULL, _IONBF, 0);
   
   //аналогия с Judy. Массив это Pvoid_t (void*), а в функции передается &Pvoid_t (т.е. PPvoid_t)
-  //Yvoid_t Tree=YreadCfg(argv[1]);
+  Yvoid_t Tree=YreadCfg(NULL,argv[1]);
+  
+  
+  
 
-//uintptr_t i=NAN;
-double i=NAN;
-printf("i=%f \n",i);
-printf("i is nan? %i\n",isnan(i));
-uintptr_t a = NAN;
-printf("a %f\n",a);
-printf("? %i\n",isnan((double)a));
+  printf("\n\n\n");
+  
+  print_t(Tree);
+  
+  printf("\n\n\n");
+  
+  
+  destroy_t(Tree);
+  
+  printf("\n\n\n");
+  
+  /*
+  
+
+  printf("\n\nSearch for transmitter, then print reys\n");
+  YML_NODE_s * T = yaml_get_node_by_name(R,"transmitter");
+  if(T){
+      printf("All types\n");
+      print_keys(T);
+      printf("type SEQ only\n");
+      print_keys_type(T,YAML_SEQUENCE_NODE);
+      printf("type SCALAR only\n");
+      print_keys_type(T,YAML_SCALAR_NODE);
+  }
+  
+   tab=0;
+  printf("\n\nprint transmitter tree\n");
+  if(T)
+    print_y(T);
+  
+  
+  
+  
+  printf("\n\nSearch for level_1_B after root, then print reys\n");
+  YML_NODE_s * M = yaml_get_node_by_name(T,"level_1_LISTMAP");
+  if(M){
+      print_keys(M);
+      print_keys_value(M);
+  }
+  
+  
+  
+  
+  printf("recivier YAML_MAPPING_NODE\n");
+  YML_NODE_s * F = yaml_get_node_by_name_and_type(R,"recivier",YAML_MAPPING_NODE);
+  if(F){
+      print_keys(F);
+      print_keys_value(F);
+  }
+  
+  
+  
+  
+  printf("Get tier_config node\n");
+  YML_NODE_s * Tier = yaml_get_node_by_name_and_type(R,"tier_config",YAML_MAPPING_NODE);
+  if(Tier){
+      
+      printf("Get OK, print seq 'test_seq22'\n");
+      print_seq_items(yaml_get_node_by_name_and_type(Tier,"test_seq22",YAML_SEQUENCE_NODE));
+      
+  }
+  
+  */
+  
+  printf("\n\nFINITA FINITA\n\n");
+  
+  
+
   
 }
 

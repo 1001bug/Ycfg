@@ -24,7 +24,10 @@ extern "C" {
     typedef void * Yvoid_t;
     typedef void ** PYvoid_t;
     
-    Yvoid_t YreadCfg(char* file);
+    void print_t(Yvoid_t *Tree);
+    void destroy_t(Yvoid_t *Tree);
+    
+    Yvoid_t YreadCfg(FILE *fd, char* file);
     
     //зачем везде PYvoid_t????
     

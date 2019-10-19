@@ -16,11 +16,17 @@
 #include <stdlib.h>
 
 #include "yaml_cfg_tree_pub.h"
+#include "yaml_cfg_tree.h"
+//#include "yaml_cfg_tree.h"
 
 int main(int argc, char** argv) {
     setvbuf(stdout, (char*) NULL, _IONBF, 0);
 
-    //аналогия с Judy. Массив это Pvoid_t (void*), а в функции передается &Pvoid_t (т.е. PPvoid_t)
+    if(argc<2){
+        printf("Pass YAML file  to read\n");
+        return 0;
+    }
+    
     Yvoid_t Tree = YreadCfg(NULL, argv[1]);
 
     if (Tree == NULL) {
@@ -34,7 +40,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-
+     
 
     printf("\n\n\n");
 

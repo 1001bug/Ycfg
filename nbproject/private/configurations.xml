@@ -34,8 +34,10 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" ~/yaml.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" ~/yaml.txt(Tree);</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" ~/yaml_cut.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" ~/yaml2.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" yaml2.txt</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" ~/yaml_cut.txt</runcommand>
+        <runcommand>"${OUTPUT_PATH}" yaml2.txt</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

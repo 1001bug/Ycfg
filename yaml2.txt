@@ -1,0 +1,83 @@
+---
+testkey: val
+test_empty:
+tier_config:
+  log_level: RMM_LOGLEV_EVENT
+  snapshot_cycle_milli: 0
+  app_message_ack: 0
+  ancillary_params: RCMSThreadPriority=100
+  
+  rx_config:
+    topics:
+      - name-1
+      - name-2
+      - name-33
+    DataPort: 10000
+    MulticastInterface: 0.0.0.0
+    InterfaceList: rmmib://0.0.0.0?ifid=1
+    UdpPorts: 10001?type=multicast,ifid=1 10000?type=multicast,ifid=1
+    MaxMemoryAllowedKBytes: 240060
+    SocketBufferSizeKBytes: 81920
+    AncillaryParams: ThreadAffinity=0x40,RecvPacketPollMicro=0x7FFFFFFF,ThreadPriority=1,UseNoMa=1,NumExThreads=-2
+    LogLevel: RMM_LOGLEV_EVENT
+    Protocol: RMM_MULTI_PROTOCOL
+    MulticastLoop: 0
+    ackFeedback: RMM_RX_FEEDBACK_DISABLE
+    nackFeedback: RMM_RX_FEEDBACK_ENABLE
+
+  tx_config:
+    LogLevel: RMM_LOGLEV_EVENT  
+    MulticastInterface: 0.0.0.0
+    PacketSizeBytes: 1000
+    McastSocketTTL: 1
+    Protocol: RMM_PGM_IB
+    MulticastLoop: 0
+    MaxMemoryAllowedKBytes: 24006
+    direct_send_sockets: 1
+    MinimalHistoryKBytes: 5
+    AncillaryParams: ThreadAffinity=0x100,FireoutPollMicro=0x7FFFFFFF,ThreadPriority=1,UseNoMa=1,NumExThreads=-2
+
+
+#tier_config:rx_config:topics: some-name-0,some-name-1
+test_root:
+  test_subroot:
+    - wrong?
+    - mapkey1: val1
+      mapkey2: val2
+      mapkey3: val3
+    - mapkey1: val4
+      mapkey2: val5
+      mapkey3: val6
+    - mapkey1: val7
+      mapkey2: val8
+      mapkey3: val9
+    - mapkey1: val10
+      mapkey2: val11
+      mapkey3: val12
+
+tier_rx_topics:
+  some-name-0:
+    turbo_flow_mode: RMM_TF_MODE_DISABLED
+    stream_join_backtrack: 0
+    app_level_ack: 0
+    mandatory_acker: 0
+    ackFeedback: RMM_RX_FEEDBACK_DISABLE
+    nackFeedback: RMM_RX_FEEDBACK_ENABLE
+    topic_group: 0.0.0.0
+
+  some-name-1:
+    turbo_flow_mode: RMM_TF_MODE_DISABLED
+    stream_join_backtrack: 0
+    app_level_ack: 0
+    mandatory_acker: 0
+    ackFeedback: RMM_RX_FEEDBACK_DISABLE
+    nackFeedback: RMM_RX_FEEDBACK_ENABLE
+    topic_group: 0.0.0.0
+    
+tier_tx_topics:
+  some-name-3:
+    topic_group: 0.0.0.0
+    ackFeedback: RMM_RX_FEEDBACK_DISABLE
+    nackFeedback: RMM_RX_FEEDBACK_ENABLE
+    mandatory_acker: 0
+

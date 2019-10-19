@@ -24,37 +24,40 @@ extern "C" {
     #include <yaml.h>
     #include <stdint.h>
     #include <assert.h>
-#include "yaml_cfg_tree_pub.h"
+    #include <stdlib.h>
+    #include<errno.h>
+    #include "yaml_cfg_tree_pub.h"
 
     
 
     typedef uintptr_t yaml_val;
 
     typedef struct YML_NODE_s {
-        char *tag;
-        yaml_val data; //char* or YML_NODE*
-        yaml_node_type_t type;
-        //struct YML_NODE_s *head;
-        struct YML_NODE_s *next; //next item same level
-
-
+        char *tag; //scalar key, map tag, seq tag
+        yaml_val data; //scalar value (char*) or next child node (YML_NODE*)
+        yaml_node_type_t type; //describe what `data` is (scalar value or link to map/seq node)
+        struct YML_NODE_s *next; //next node same level
     } YML_NODE_s;
 
 
-    
-    //int seqencing(yaml_parser_t *parser, YML_NODE_s *R);
-    //int mapping(yaml_parser_t *parser, YML_NODE_s *R);
+    //recursion parsing
     static int mapping(yaml_parser_t *parser, YML_NODE_s **root);
     static int seqencing(yaml_parser_t *parser, YML_NODE_s **root);
-    
-    //int byevent(yaml_parser_t *parser, YML_NODE_s *RR);
     static int byevent(yaml_parser_t *parser, YML_NODE_s **root);
     
+    //recur print tree to stdout
     static void print_y(YML_NODE_s *R);
     static void print_yy(YML_NODE_s *R);
     
+    //recur free tree
     static void destroy_y(YML_NODE_s *R);
     static void destroy_yy(YML_NODE_s *R);
+    
+    //remember error reason
+    static void YError(yaml_error_type_t e, const char *problem, size_t line);
+
+    //traverce tree to certain node
+    static YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTagPath, yaml_node_type_t lastNodeType);
 
 #ifdef __cplusplus
 }

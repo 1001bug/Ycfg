@@ -4,10 +4,18 @@
  * and open the template in the editor.
  */
 #include "yaml_cfg_tree.h"
+
 #include<unistd.h>
 #include <bits/string2.h>
 
-int map_level = 0;
+/** Error type. */
+static __thread yaml_error_type_t parcer_error = YAML_NO_ERROR;
+/** Error description. */
+#define ERR_DESCR_LEN 500
+static __thread char parcer_problem[ERR_DESCR_LEN] = {0};
+static __thread size_t parcer_problem_line = 0;
+
+
 int tab = 0;
 
 void p(int v) {
@@ -15,6 +23,57 @@ void p(int v) {
         printf("  ");
 }
 
+//Inernal fun - remeber parser error
+
+static void YError(yaml_error_type_t e, const char *problem, size_t line) {
+    parcer_error = e;
+    parcer_problem_line = line;
+    memset(parcer_problem, 0, ERR_DESCR_LEN);
+    strncpy(parcer_problem, problem, ERR_DESCR_LEN - 1);
+    return;
+}
+
+/*
+ * Public fun - get last parces error
+ */
+int YlastError(char **error, char **description, int *line) {
+
+    *description = parcer_problem;
+    *line = (int) parcer_problem_line;
+
+    switch (parcer_error) {
+            /** No error is produced. */
+        case YAML_NO_ERROR: *error = "YAML_NO_ERROR";
+            return (int) parcer_error;
+
+            /** Cannot allocate or reallocate a block of memory. */
+        case YAML_MEMORY_ERROR: *error = "YAML_MEMORY_ERROR";
+            return (int) parcer_error;
+
+            /** Cannot read or decode the input stream. */
+        case YAML_READER_ERROR: *error = "YAML_READER_ERROR";
+            return (int) parcer_error;
+            /** Cannot scan the input stream. */
+        case YAML_SCANNER_ERROR: *error = "YAML_SCANNER_ERROR";
+            return (int) parcer_error;
+            /** Cannot parse the input stream. */
+        case YAML_PARSER_ERROR: *error = "YAML_PARSER_ERROR";
+            return (int) parcer_error;
+            /** Cannot compose a YAML document. */
+        case YAML_COMPOSER_ERROR: *error = "YAML_COMPOSER_ERROR";
+            return (int) parcer_error;
+
+            /** Cannot write to the output stream. */
+        case YAML_WRITER_ERROR: *error = "YAML_WRITER_ERROR";
+            return (int) parcer_error;
+            /** Cannot emit a YAML stream. */
+        case YAML_EMITTER_ERROR: *error = "YAML_EMITTER_ERROR";
+            return (int) parcer_error;
+    }
+    return 0;
+}
+
+//Inernal - parcing seqence block
 int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
     yaml_event_t event;
     int kvp = 1;
@@ -28,15 +87,13 @@ int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
     do {
         if (!yaml_parser_parse(parser, &event)) {
-            fprintf(stderr, "Parser error (%d): %s\n", parser->error, parser->problem);
+            //fprintf(stderr, "Parser error (%d): %s\n", parser->error, parser->problem);
+            YError(parser->error, parser->problem, parser->problem_mark.line);
             yaml_event_delete(&event);
             return -1;
         }
 
         switch (event.type) {
-            case YAML_NO_EVENT: puts("No event!");
-                break;
-                /* Stream start/end */
 
             case YAML_MAPPING_START_EVENT:
             {
@@ -65,7 +122,7 @@ int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
 
             {
-                //сиквенс - это список, там нет ключа и значения
+                //SCALAR in SEQUENCE is just value (no key vlaue pairs)
 
                 root->tag = NULL;
                 root->type = YAML_SCALAR_NODE;
@@ -90,6 +147,7 @@ int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
 }
 
+//inernal - parsing map block
 static int mapping(yaml_parser_t *parser, YML_NODE_s **Proot) {
     yaml_event_t event;
 
@@ -105,7 +163,8 @@ static int mapping(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
     do {
         if (!yaml_parser_parse(parser, &event)) {
-            fprintf(stderr, "Parser error (%d): %s\n", parser->error, parser->problem);
+            //fprintf(stderr, "Parser error (%d): %s\n", parser->error, parser->problem);
+            YError(parser->error, parser->problem, parser->problem_mark.line);
             yaml_event_delete(&event);
             return -1;
         }
@@ -117,7 +176,6 @@ static int mapping(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
                 kvp = 1;
                 root->type = YAML_MAPPING_NODE;
-                //root->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
                 int result = mapping(parser, (YML_NODE_s **) (&(root->data)));
                 if (result != 0)
                     return result;
@@ -138,7 +196,6 @@ static int mapping(yaml_parser_t *parser, YML_NODE_s **Proot) {
             {
                 kvp = 1;
                 root->type = YAML_SEQUENCE_NODE;
-                //root->data=(yaml_val)calloc(1,sizeof(YML_NODE_s));
                 int result = seqencing(parser, (YML_NODE_s **) (&(root->data)));
                 if (result != 0)
                     return result;
@@ -186,13 +243,14 @@ static int mapping(yaml_parser_t *parser, YML_NODE_s **Proot) {
 
 }
 
+//inernal - eventbase yaml parsing
 static int byevent(yaml_parser_t *parser, YML_NODE_s **root) {
     yaml_event_t event;
 
 
     do {
         if (!yaml_parser_parse(parser, &event)) {
-            fprintf(stderr, "Parser error (%d): %s\n", parser->error, parser->problem);
+            YError(parser->error, parser->problem, parser->problem_mark.line);
             yaml_event_delete(&event);
             return -1;
         }
@@ -230,20 +288,22 @@ static int byevent(yaml_parser_t *parser, YML_NODE_s **root) {
             yaml_event_delete(&event);
     } while (event.type != YAML_STREAM_END_EVENT);
     yaml_event_delete(&event);
-    /* END new code */
+
 
 
 
     return 0;
 }
 
-void destroy_t(Yvoid_t *Tree) {
+//public - free tree recur
+void destroy_t(Yvoid_t Tree) {
 
     YML_NODE_s *R = (YML_NODE_s *) Tree;
     destroy_y(R);
 
 }
 
+//inernal  - free tree recur
 static void destroy_y(YML_NODE_s *R) {
 
     for (YML_NODE_s * tmp = R; tmp;) {
@@ -254,11 +314,11 @@ static void destroy_y(YML_NODE_s *R) {
 
     }
 }
-
+//inernal  - free tree recur
 static void destroy_yy(YML_NODE_s *R) {
 
     //сам текущий блок высвобождается по выходу от сюда
-    
+
     if (R->type == YAML_MAPPING_NODE) {
 
         destroy_y((YML_NODE_s *) R->data);
@@ -266,8 +326,7 @@ static void destroy_yy(YML_NODE_s *R) {
         if (R->tag)
             free(R->tag);
 
-    }
-    else if (R->type == YAML_SEQUENCE_NODE) {
+    } else if (R->type == YAML_SEQUENCE_NODE) {
 
         destroy_y((YML_NODE_s *) R->data);
         if (R->tag)
@@ -275,8 +334,7 @@ static void destroy_yy(YML_NODE_s *R) {
 
         //free((void*)R->data);
 
-    }
-    else if (R->type == YAML_SCALAR_NODE) {
+    } else if (R->type == YAML_SCALAR_NODE) {
 
         if (R->tag)
             free(R->tag);
@@ -284,24 +342,24 @@ static void destroy_yy(YML_NODE_s *R) {
         if (R->data)
             free((void*) R->data);
 
-    }
-    else{
+    } else {
         if (R->tag)
             free(R->tag);
 
         if (R->data)
             free((void*) R->data);
-        
+
     }
 
 }
-
-void print_t(Yvoid_t *Tree) {
+//public - print tree to stdout
+void print_t(Yvoid_t Tree) {
 
     YML_NODE_s *R = (YML_NODE_s *) Tree;
     print_y(R);
 }
 
+//inernal - print tree to stdout recur
 static void print_y(YML_NODE_s *R) {
 
 
@@ -314,7 +372,7 @@ static void print_y(YML_NODE_s *R) {
 
 
 }
-
+//inernal - print tree to stdout recur
 static void print_yy(YML_NODE_s *R) {
 
     if (R->type == YAML_MAPPING_NODE) {
@@ -341,102 +399,191 @@ static void print_yy(YML_NODE_s *R) {
 
 }
 
+/*Internal fun. 
+ * Find Node by path root:subTag:subSubTag
+ * on success check last Node type
+ * return poiner to YML_NODE_s or NULL
+ */
+static YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTagPath, yaml_node_type_t lastNodeType) {
 
-YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTag, yaml_node_type_t type){
-    YML_NODE_s * R = (YML_NODE_s *)Tree;
-    int nodeTag_len=strlen(nodeTag);
-    char * nodeTag_end=strchr(nodeTag,':');
-    int nodeTag_compare_len=nodeTag_end? nodeTag_end-nodeTag : nodeTag_len;
-    
-    if(nodeTag_compare_len == 0)
-        return (YML_NODE_s *)NULL;
+    char * subTag = nodeTagPath;
+    int delim_num = 0;
+    int jump_num = 0;
 
-    for (YML_NODE_s * tmp = R; tmp != NULL; tmp = tmp->next) {
-        if(tmp->tag && tmp->type == type && tmp->data && strncmp(tmp->tag,nodeTag,nodeTag_compare_len)==0)
-            return (YML_NODE_s *)tmp;
+    while (*subTag) {
+        if (*subTag == ':')
+            delim_num += 1;
+        subTag += 1;
     }
-    return (YML_NODE_s *)NULL;
+
+    subTag = nodeTagPath;
+
+    YML_NODE_s * R = (YML_NODE_s *) Tree;
+
+    for (;;) {
+
+        //YML_NODE_s *RR = YNode(R,subkey,YAML_MAPPING_NODE);
+
+
+        int subTag_len = strlen(subTag);
+        char * subTag_first_delim = strchr(subTag, ':');
+        int subTag_compare_len = subTag_first_delim ? subTag_first_delim - subTag : subTag_len;
+
+        if (subTag_compare_len == 0)
+            return (YML_NODE_s *) NULL;
+
+        //search down
+        YML_NODE_s * tmp = NULL;
+        for (tmp = R; tmp != NULL; tmp = tmp->next) {
+            if (
+                    tmp->type != YAML_NO_NODE //avoid dereference tmp->data as YML_NODE_s *
+                    && tmp->data //avoid dereference NULL      as YML_NODE_s *
+                    && tmp->tag
+                    && strncmp(tmp->tag, subTag, subTag_compare_len) == 0 //check name
+                    )
+                goto FOUND;
+        }
+        //reach end of current level, no tag found, escape!
+        return NULL;
+
+FOUND:
+        //found right NODE
+        R = (YML_NODE_s *) tmp;
+
+        //any delimeters? Lets jump deepper, but is next NODE type good for that?
+        if (subTag_first_delim && R->type != YAML_SCALAR_NODE) {
+            //it is MAP or SEQ, lets jump to child NODE
+            subTag = subTag_first_delim + 1;
+            R = (YML_NODE_s *) R->data;
+            continue; //next for iteration
+        } else {
+            //it is last subkey
+            //check type and return
+            if (R) {//useless.... check
+                if (R->type == lastNodeType)
+                    return R;
+            }
+            return NULL;
+        }
+
+    }//for ;;
+
+    return (YML_NODE_s *) NULL;
 }
 
+/*
+ * Public fun - find MAPPING Node by path
+ */
+Yvoid_t YmapNode(Yvoid_t Tree, char * nodeTagPath) {
 
-Yvoid_t YmapNode(Yvoid_t Tree, char * nodeTag){
-    
-    return (Yvoid_t)((YNode((YML_NODE_s *)Tree, nodeTag, YAML_MAPPING_NODE))->data);
+    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_MAPPING_NODE);
+    if (R)
+        return (Yvoid_t) (R->data);
+    return (Yvoid_t) NULL;
 }
 
-Yvoid_t YseqNode(Yvoid_t Tree, char * nodeTag){
-    return (Yvoid_t)(YNode((YML_NODE_s *)Tree, nodeTag, YAML_SEQUENCE_NODE)->data);
+/*
+ * Public fun - find SEQUENCE Node by path
+ */
+Yvoid_t YseqNode(Yvoid_t Tree, char * nodeTagPath) {
+
+    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SEQUENCE_NODE);
+    if (R)
+        return (Yvoid_t) (R->data);
+    return (Yvoid_t) NULL;
 }
 
-char* YmapVal(Yvoid_t Tree, char *tag){
-    YML_NODE_s * R = YNode((YML_NODE_s *)Tree, tag, YAML_SCALAR_NODE);
-    
-    if(R && R->data){
-        return (char *)(R->data);
+/*
+ * Public fun - get MAP value by path (root:subroot:key) => val
+ */
+char* YmapVal(Yvoid_t Tree, char *nodeTagPath) {
+    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SCALAR_NODE);
+
+    if (R && R->data) {
+        return (char *) (R->data);
     }
     return NULL;
 }
 
+/*
+ * Public fun - get list of SEQUENCE strings
+ * Need to free()
+ */
+char** YseqVals(Yvoid_t Tree, char *nodeTagPath, int *N) {
+    //jump to seq node
+    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SEQUENCE_NODE);
+
+    //found?
+    if (R && R->data) {
+        R = (YML_NODE_s *) R->data;
+
+        //count
+        int n = 0;
+        for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
+            if (tmp->type == YAML_SCALAR_NODE)
+                n += 1;
+        if (n == 0) {
+            *N = 0;
+            return NULL;
+        }
+        //alloc
+        int i = 0;
+        char **LIST = calloc(n, sizeof (char *));
+
+        //remember
+        for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
+            if (tmp->type == YAML_SCALAR_NODE)
+                LIST[i++] = (char *) tmp->data;
+
+        //return list
+        *N = n;
+
+        return LIST;
+    }
+    return NULL;
+}
 
 /*
- * return  0: OK
- * return -1: wrong path
- * return -2: path ok, but wrong key name
+ * Public fun - get list of SEQUENCE MAPS (return array of Trees)
+ * Need to free()
  */
-int YgetVal(Yvoid_t Tree,char *path_to_key, char **val){
-    char * subkey = path_to_key;
-    int delim_num=0;
-    int jump_num=0;
-    while(*subkey){
-        if(*subkey==':')
-            delim_num+=1;
-        subkey+=1;
-    }
-    subkey = path_to_key;
-    
-    YML_NODE_s * R = (YML_NODE_s *)Tree;
-    
-    for(;;){
-        YML_NODE_s *RR = YNode(R,subkey,YAML_MAPPING_NODE);
-        if(RR){
-            R=(YML_NODE_s *)RR->data;
-            jump_num+=1;
-            char * subkey_end = strchr(subkey,':');
-            
-            if(subkey_end){
-                subkey=subkey_end+1;
-            }
-            else
-                break;
+Yvoid_t* YseqList(Yvoid_t Tree, char *nodeTagPath, int *N) {
+    //jump to seq node
+    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SEQUENCE_NODE);
+
+    //found?
+    if (R && R->data) {
+        R = (YML_NODE_s *) R->data;
+
+        //count
+        int n = 0;
+        for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
+            if (tmp->type == YAML_MAPPING_NODE)
+                n += 1;
+        if (n == 0) {
+            *N = 0;
+            return NULL;
         }
-        else
-            break;
-        
-        
-        
+        //alloc
+        int i = 0;
+        Yvoid_t*LIST = calloc(n, sizeof (Yvoid_t));
+
+        //remember
+        for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
+            if (tmp->type == YAML_MAPPING_NODE)
+                LIST[i++] = (Yvoid_t) tmp->data;
+
+        //return list
+        *N = n;
+
+        return LIST;
     }
-    
-    
-    if(jump_num==delim_num && R){
-            char *value = YmapVal(R,subkey);
-            if(value){
-                *val=value;
-                return 0;
-            }
-            else
-                return -2;
-            
-        }
-    
-    
-    return -1;
-    
-    
-    
-    
-    
+    return NULL;
 }
+
 /******************************************************************************/
+
+/*
 
 void print_keys(YML_NODE_s * R) {
     int i = 0;
@@ -508,34 +655,41 @@ YML_NODE_s * yaml_get_node_by_name_and_type(YML_NODE_s * R, char *name, yaml_nod
     }
     return NULL;
 }
+ */
 /******************************************************************************/
 
-Yvoid_t YreadCfg(FILE *fh, char* file) {
+/*
+ * Public fun - build config tree
+ * if fd is NULL, not passed, open file by name, close on finish
+ * if fd is not NULL, read, but do not close
+ */
+Yvoid_t YreadCfg(FILE *fd, char* file) {
 
+    FILE *FD = NULL;
     yaml_parser_t parser;
-
     YML_NODE_s *R = NULL;
+
     int shoud_closw_fd = 0;
-    if (fh == NULL) {
-        fh = fopen(file, "r");
-        if (fh == NULL) {
-            fprintf(stderr, "Failed to open file!\n");
+    if (fd == NULL) {
+        errno=0;
+        FD = fopen(file, "r");
+        if (FD == NULL) {
+            //YError(YAML_READER_ERROR,"Open file for read failed",0);
+            YError(YAML_READER_ERROR,strerror(errno),0);
             return NULL;
         }
         shoud_closw_fd = 1;
-    }
+    } else
+        FD = fd;
 
 
 
-
-
-
-    /* Initialize parser */
     if (!yaml_parser_initialize(&parser)) {
-        fprintf(stderr, "Failed to initialize yaml parser!\n");
+
+        YError(parser.error, parser.problem, parser.problem_mark.line);
         return NULL;
     }
-    yaml_parser_set_input_file(&parser, fh);
+    yaml_parser_set_input_file(&parser, FD);
 
     //event base parsing
     int r = byevent(&parser, &R);
@@ -545,11 +699,12 @@ Yvoid_t YreadCfg(FILE *fh, char* file) {
 
     //close only if opened by us
     if (shoud_closw_fd)
-        fclose(fh);
+        fclose(FD);
 
     if (R == NULL || r < 0) {
-        fprintf(stderr, "Failed to parse yaml!\n");
-        //cleanup tree 'R'!!!!!
+
+        //cleanup tree
+        destroy_y(R);
         return NULL;
     }
 

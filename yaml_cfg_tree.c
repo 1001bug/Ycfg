@@ -5,6 +5,7 @@
  */
 #include "yaml_cfg_tree.h"
 #include<unistd.h>
+#include <bits/string2.h>
 
 int map_level = 0;
 int tab = 0;
@@ -318,7 +319,7 @@ static void print_yy(YML_NODE_s *R) {
 
     if (R->type == YAML_MAPPING_NODE) {
         p(tab);
-        printf("MAT TAG [%s]\n", R->tag ? R->tag : "[null]");
+        printf("MAP TAG [%s]\n", R->tag ? R->tag : "[null]");
         tab++;
         print_y((YML_NODE_s *) R->data);
     }
@@ -339,6 +340,103 @@ static void print_yy(YML_NODE_s *R) {
     }
 
 }
+
+
+YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTag, yaml_node_type_t type){
+    YML_NODE_s * R = (YML_NODE_s *)Tree;
+    int nodeTag_len=strlen(nodeTag);
+    char * nodeTag_end=strchr(nodeTag,':');
+    int nodeTag_compare_len=nodeTag_end? nodeTag_end-nodeTag : nodeTag_len;
+    
+    if(nodeTag_compare_len == 0)
+        return (YML_NODE_s *)NULL;
+
+    for (YML_NODE_s * tmp = R; tmp != NULL; tmp = tmp->next) {
+        if(tmp->tag && tmp->type == type && tmp->data && strncmp(tmp->tag,nodeTag,nodeTag_compare_len)==0)
+            return (YML_NODE_s *)tmp;
+    }
+    return (YML_NODE_s *)NULL;
+}
+
+
+Yvoid_t YmapNode(Yvoid_t Tree, char * nodeTag){
+    
+    return (Yvoid_t)((YNode((YML_NODE_s *)Tree, nodeTag, YAML_MAPPING_NODE))->data);
+}
+
+Yvoid_t YseqNode(Yvoid_t Tree, char * nodeTag){
+    return (Yvoid_t)(YNode((YML_NODE_s *)Tree, nodeTag, YAML_SEQUENCE_NODE)->data);
+}
+
+char* YmapVal(Yvoid_t Tree, char *tag){
+    YML_NODE_s * R = YNode((YML_NODE_s *)Tree, tag, YAML_SCALAR_NODE);
+    
+    if(R && R->data){
+        return (char *)(R->data);
+    }
+    return NULL;
+}
+
+
+/*
+ * return  0: OK
+ * return -1: wrong path
+ * return -2: path ok, but wrong key name
+ */
+int YgetVal(Yvoid_t Tree,char *path_to_key, char **val){
+    char * subkey = path_to_key;
+    int delim_num=0;
+    int jump_num=0;
+    while(*subkey){
+        if(*subkey==':')
+            delim_num+=1;
+        subkey+=1;
+    }
+    subkey = path_to_key;
+    
+    YML_NODE_s * R = (YML_NODE_s *)Tree;
+    
+    for(;;){
+        YML_NODE_s *RR = YNode(R,subkey,YAML_MAPPING_NODE);
+        if(RR){
+            R=(YML_NODE_s *)RR->data;
+            jump_num+=1;
+            char * subkey_end = strchr(subkey,':');
+            
+            if(subkey_end){
+                subkey=subkey_end+1;
+            }
+            else
+                break;
+        }
+        else
+            break;
+        
+        
+        
+    }
+    
+    
+    if(jump_num==delim_num && R){
+            char *value = YmapVal(R,subkey);
+            if(value){
+                *val=value;
+                return 0;
+            }
+            else
+                return -2;
+            
+        }
+    
+    
+    return -1;
+    
+    
+    
+    
+    
+}
+/******************************************************************************/
 
 void print_keys(YML_NODE_s * R) {
     int i = 0;
@@ -410,6 +508,7 @@ YML_NODE_s * yaml_get_node_by_name_and_type(YML_NODE_s * R, char *name, yaml_nod
     }
     return NULL;
 }
+/******************************************************************************/
 
 Yvoid_t YreadCfg(FILE *fh, char* file) {
 

@@ -406,6 +406,9 @@ static void print_yy(YML_NODE_s *R) {
  */
 static YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTagPath, yaml_node_type_t lastNodeType) {
 
+    if(nodeTagPath == NULL || strlen(nodeTagPath)==0)
+        return NULL;
+    
     char * subTag = nodeTagPath;
     int delim_num = 0;
     int jump_num = 0;
@@ -439,6 +442,7 @@ static YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTagPath, yaml_node_type_
                     tmp->type != YAML_NO_NODE //avoid dereference tmp->data as YML_NODE_s *
                     && tmp->data //avoid dereference NULL      as YML_NODE_s *
                     && tmp->tag
+                    && strlen(tmp->tag) == subTag_compare_len
                     && strncmp(tmp->tag, subTag, subTag_compare_len) == 0 //check name
                     )
                 goto FOUND;
@@ -510,14 +514,31 @@ char* YmapVal(Yvoid_t Tree, char *nodeTagPath) {
  * Need to free()
  */
 char** YseqVals(Yvoid_t Tree, char *nodeTagPath, int *N) {
-    //jump to seq node
-    YML_NODE_s * R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SEQUENCE_NODE);
+    YML_NODE_s * R=NULL;
 
-    //found?
-    if (R && R->data) {
+    //if nodeTagPath is empty, return current level seq list
+    
+    if(nodeTagPath != NULL && strlen(nodeTagPath)>0){
+        //jump to seq node
+        R = YNode((YML_NODE_s *) Tree, nodeTagPath, YAML_SEQUENCE_NODE);
+        
+        //found?
+        if (R && R->data) {
         R = (YML_NODE_s *) R->data;
+        }
+        else return NULL;
+    }
+    //Use current root
+    else
+        R=(YML_NODE_s *) Tree;
 
-        //count
+
+
+    //valid Root?
+    if (R) {
+        
+
+        //count SEQ nodes
         int n = 0;
         for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
             if (tmp->type == YAML_SCALAR_NODE)
@@ -526,19 +547,20 @@ char** YseqVals(Yvoid_t Tree, char *nodeTagPath, int *N) {
             *N = 0;
             return NULL;
         }
+        
         //alloc
         int i = 0;
         char **LIST = calloc(n, sizeof (char *));
 
-        //remember
+        //fillin
         for (YML_NODE_s *tmp = R; tmp != NULL; tmp = tmp->next)
             if (tmp->type == YAML_SCALAR_NODE)
                 LIST[i++] = (char *) tmp->data;
 
         //return list
         *N = n;
-
         return LIST;
+        
     }
     return NULL;
 }

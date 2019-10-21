@@ -22,11 +22,11 @@
 int main(int argc, char** argv) {
     setvbuf(stdout, (char*) NULL, _IONBF, 0);
 
-    if(argc<2){
+    if (argc < 2) {
         printf("Pass YAML file  to read\n");
         return 0;
     }
-    
+
     Yvoid_t Tree = YreadCfg(NULL, argv[1]);
 
     if (Tree == NULL) {
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-     
+
 
     printf("\n\n\n");
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     if (tier_config) {
         printf("Node 'tier_config' found\n");
         char *val = NULL;
-        if (val = YmapVal(tier_config, "log_level")) {
+        if ((val = YmapVal(tier_config, "log_level"))) {
             printf("'tier_config' -> 'log_level' = %s\n", val);
         } else
             printf("'tier_config' -> 'log_level' = [not found]\n");
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     if (tier_config_tx_config) {
         printf("Node 'tier_config:tx_config' found\n");
         char *val = NULL;
-        if (val = YmapVal(tier_config_tx_config, "MaxMemoryAllowedKBytes")) {
+        if ((val = YmapVal(tier_config_tx_config, "MaxMemoryAllowedKBytes"))) {
             printf("'tier_config:tx_config' -> 'MaxMemoryAllowedKBytes' = %s\n", val);
         } else
             printf("'tier_config:tx_config' -> 'MaxMemoryAllowedKBytes' = [not found]\n");
@@ -126,35 +126,35 @@ int main(int argc, char** argv) {
         printf("Map Node 'tier_config:rx_config' NOT found\n");
 
 
-    
-    printf("\n");
-    
-    
-    
-    {
-        
-    Yvoid_t tier_config_Rx_config = YseqNode(Tree, "tier_config:rx_config:topics");
-    if (tier_config_Rx_config) {
-        printf("Seq Node 'tier_config:rx_config:topics' found\n");
-        int char_list_num = 0;
-        char **list = YseqVals(tier_config_Rx_config, NULL, &char_list_num);
-        if (char_list_num) {
-            printf("SEQ vals for current level:\n");
-            for (int i = 0; i < char_list_num; i++) {
-                printf("\t%s\n", list[i]);
-            }
-            free(list);
-        } else
-            printf("Seq Node list empty\n");
 
-    } else
-        printf("Seq Node 'tier_config:rx_config:topics' NOT found\n");
+    printf("\n");
+
+
+
+    {
+
+        Yvoid_t tier_config_Rx_config = YseqNode(Tree, "tier_config:rx_config:topics");
+        if (tier_config_Rx_config) {
+            printf("Seq Node 'tier_config:rx_config:topics' found\n");
+            int char_list_num = 0;
+            char **list = YseqVals(tier_config_Rx_config, NULL, &char_list_num);
+            if (char_list_num) {
+                printf("SEQ vals for current level:\n");
+                for (int i = 0; i < char_list_num; i++) {
+                    printf("\t%s\n", list[i]);
+                }
+                free(list);
+            } else
+                printf("Seq Node list empty\n");
+
+        } else
+            printf("Seq Node 'tier_config:rx_config:topics' NOT found\n");
 
     }
-    
-    
-    
-    
+
+
+
+
 
     printf("\n");
 
@@ -168,15 +168,15 @@ int main(int argc, char** argv) {
         printf("Seq list 'test_root:test_subroot' found\n");
 
         char *temp;
-        for(int i=0;i<tree_list_num;i++){
-        if (temp = YmapVal(tlist[i], "mapkey1"))
-            printf("List N%i, 'mapkey1': %s\n", i, temp);
-        if (temp = YmapVal(tlist[i], "mapkey2"))
-            printf("List N%i, 'mapkey2': %s\n", i, temp);
-        printf("\n");
+        for (int i = 0; i < tree_list_num; i++) {
+            if ((temp = YmapVal(tlist[i], "mapkey1")))
+                printf("List N%i, 'mapkey1': %s\n", i, temp);
+            if ((temp = YmapVal(tlist[i], "mapkey2")))
+                printf("List N%i, 'mapkey2': %s\n", i, temp);
+            printf("\n");
         }
-        
-        
+
+
 
         free(tlist);
     }
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         printf("MapVAl 'testkey' = [not found]\n");
 
 
-    printf("\n");    
+    printf("\n");
 
     char * test_empty = YmapVal(Tree, "test_empty");
     if (test_empty)
@@ -201,33 +201,33 @@ int main(int argc, char** argv) {
         printf("MapVAl 'test_empty' = [not found]\n");
 
 
-    printf("\n");    
-    
-    
-    
+    printf("\n");
+
+
+
     {
-    char * test = YmapVal(Tree, "test");
-    if (test)
-        printf("MapVAl 'test' = %s\n", test);
-    else
-        printf("MapVAl 'test' = [not found]\n");
+        char * test = YmapVal(Tree, "test");
+        if (test)
+            printf("MapVAl 'test' = %s\n", test);
+        else
+            printf("MapVAl 'test' = [not found]\n");
 
 
-    printf("\n");    
+        printf("\n");
     }
 
     {
-    char * test = YmapVal(Tree, "");
-    if (test)
-        printf("MapVAl '' = %s\n", test);
-    else
-        printf("MapVAl '' = [not found]\n");
+        char * test = YmapVal(Tree, "");
+        if (test)
+            printf("MapVAl '' = %s\n", test);
+        else
+            printf("MapVAl '' = [not found]\n");
 
 
-    printf("\n");    
+        printf("\n");
     }
-    
-    
+
+
 
     destroy_t(Tree);
 

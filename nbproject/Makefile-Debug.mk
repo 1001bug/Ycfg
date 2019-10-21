@@ -66,12 +66,12 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/ycfg: ${OBJECTFILES}
 ${OBJECTDIR}/main.o: main.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+	$(COMPILE.c) -g -Wall -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
 
 ${OBJECTDIR}/yaml_cfg_tree.o: yaml_cfg_tree.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/yaml_cfg_tree.o yaml_cfg_tree.c
+	$(COMPILE.c) -g -Wall -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/yaml_cfg_tree.o yaml_cfg_tree.c
 
 # Subprojects
 .build-subprojects:

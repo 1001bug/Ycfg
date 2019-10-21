@@ -40,6 +40,7 @@
       <compileType>
         <cTool>
           <standard>3</standard>
+          <warningLevel>2</warningLevel>
         </cTool>
         <linkerTool>
           <commandLine>-lyaml</commandLine>

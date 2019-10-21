@@ -40,25 +40,6 @@ extern "C" {
     } YML_NODE_s;
 
 
-    //recursion parsing
-    static int mapping(yaml_parser_t *parser, YML_NODE_s **root);
-    static int seqencing(yaml_parser_t *parser, YML_NODE_s **root);
-    static int byevent(yaml_parser_t *parser, YML_NODE_s **root);
-    
-    //recur print tree to stdout
-    static void print_y(YML_NODE_s *R);
-    static void print_yy(YML_NODE_s *R);
-    
-    //recur free tree
-    static void destroy_y(YML_NODE_s *R);
-    static void destroy_yy(YML_NODE_s *R);
-    
-    //remember error reason
-    static void YError(yaml_error_type_t e, const char *problem, size_t line);
-
-    //traverce tree to certain node
-    static YML_NODE_s * YNode(YML_NODE_s * Tree, char * nodeTagPath, yaml_node_type_t lastNodeType);
-
 #ifdef __cplusplus
 }
 #endif

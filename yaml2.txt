@@ -13,6 +13,18 @@ tier_config:
       - name-2
       - name-33
     DataPort: 10000
+    test_list_inside_list:
+      - ABC1
+      - ABC2
+      - ABC3
+      -
+        - DEF1
+        - DEF2
+        - DEF3
+      - ABC4
+      - ABC5
+      - ABC6
+    test_list_inside_list_inline: [A1,B1,C1,[A2,B2,D2],D1,E1,[A3],F1,G1]
     MulticastInterface: 0.0.0.0
     InterfaceList: rmmib://0.0.0.0?ifid=1
     UdpPorts: 10001?type=multicast,ifid=1 10000?type=multicast,ifid=1

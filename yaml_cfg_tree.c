@@ -161,6 +161,20 @@ int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
                 break;
             }
             
+            case YAML_SEQUENCE_START_EVENT:
+            {
+                root->type = YAML_SEQUENCE_NODE;
+                int result = seqencing(parser, (YML_NODE_s **) (&(root->data)));
+                if (result != 0)
+                    return result;
+
+                YML_NODE_s *tmp = calloc(1, sizeof (YML_NODE_s));
+                root->next = tmp;
+                root = tmp;
+
+                break;
+            }
+            
             
             
             
@@ -171,7 +185,7 @@ int seqencing(yaml_parser_t *parser, YML_NODE_s **Proot) {
             case YAML_STREAM_END_EVENT:
             case YAML_DOCUMENT_START_EVENT:
             case YAML_DOCUMENT_END_EVENT:
-            case YAML_SEQUENCE_START_EVENT:
+//            case YAML_SEQUENCE_START_EVENT:
             case YAML_MAPPING_END_EVENT:
                 break;
         }

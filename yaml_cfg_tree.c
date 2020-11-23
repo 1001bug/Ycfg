@@ -6,7 +6,7 @@
 #include "yaml_cfg_tree.h"
 
 #include<unistd.h>
-#include <bits/string2.h>
+
 
 
 
@@ -426,8 +426,13 @@ static void destroy_yy(YML_NODE_s *R) {
     }
 
 }
-//public - print tree to stdout
 
+//public - return version string
+char * Yget_version_string(){
+    return yaml_get_version_string();
+}
+
+//public - print tree to stdout
 void print_t(Yvoid_t Tree) {
 
     YML_NODE_s *R = (YML_NODE_s *) Tree;
